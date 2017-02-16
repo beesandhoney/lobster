@@ -1,0 +1,72 @@
+troubleshooting CAN
+
+CAN states:
+ERROR-ACTIVE: this is the usual state - everything is OK. the node can transmit messages and active
+error frames (made of dominant bits) without any restrictions.
+ERROR-PASSIVE: messages and passive error frames (made of ressesive bits) may be transmitted.
+BUS-OFF: in this state it is temporarily impossible for the station to participate in the bus
+communication. During this state, messages can neither be recieved or transmitted.
+below troubleshooting guide shows how you end up in BUS-OFF and what todo do get out of it.
+
+*CAN0 is in BUS-OFF (this happens if pin 8 on TJA1051t/3 is pulled high which is the default state of the transiever
+and a attempting to broadcast CAN at the same time.)
+
+ pi@raspberrypi:~ $ sudo ip -s -d link show can0
+3: can0: <NO-CARRIER,NOARP,UP,ECHO> mtu 16 qdisc pfifo_fast state DOWN mode DEFAULT group default qlen 10
+    link/can  promiscuity 0 
+    can state BUS-OFF restart-ms 0 
+	  bitrate 500000 sample-point 0.750 
+	  tq 250 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+	  mcp251x: tseg1 3..16 tseg2 2..8 sjw 1..4 brp 1..64 brp-inc 1
+	  clock 4000000
+	  re-started bus-errors arbit-lost error-warn error-pass bus-off
+	  0          0          0          3          6          2         
+    RX: bytes  packets  errors  dropped overrun mcast   
+    10136      1648     0       0       0       0      
+    TX: bytes  packets  errors  dropped carrier collsns 
+    136        17       1       1       0   
+
+*restart the can link
+pi@raspberrypi:~ $ sudo ifconfig can0 down
+
+pi@raspberrypi:~ $ sudo ip -s -d link show can0
+3: can0: <NOARP,ECHO> mtu 16 qdisc pfifo_fast state DOWN mode DEFAULT group default qlen 10
+    link/can  promiscuity 0 
+    can state STOPPED restart-ms 0 
+	  bitrate 500000 sample-point 0.750 
+	  tq 250 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+	  mcp251x: tseg1 3..16 tseg2 2..8 sjw 1..4 brp 1..64 brp-inc 1
+	  clock 4000000
+	  re-started bus-errors arbit-lost error-warn error-pass bus-off
+	  0          0          0          3          6          2         
+    RX: bytes  packets  errors  dropped overrun mcast   
+    10136      1648     0       0       0       0      
+    TX: bytes  packets  errors  dropped carrier collsns 
+    136        17       2       2       0       0    
+
+*Make sure that pin 8 on TJA1051t/3 is pulled down (0 V) 
+
+*Restart CAN link:
+
+pi@raspberrypi:~ $ sudo ip link set up can0 type can bitrate 500000
+* check CAN link status, "ERROR-ACTIVE" is the usual state
+pi@raspberrypi:~ $ sudo ip -s -d link show can0
+3: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP mode DEFAULT group default qlen 10
+    link/can  promiscuity 0 
+    can state ERROR-ACTIVE restart-ms 0 
+	  bitrate 500000 sample-point 0.750 
+	  tq 250 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+	  mcp251x: tseg1 3..16 tseg2 2..8 sjw 1..4 brp 1..64 brp-inc 1
+	  clock 4000000
+	  re-started bus-errors arbit-lost error-warn error-pass bus-off
+	  0          0          0          3          6          2         
+    RX: bytes  packets  errors  dropped overrun mcast   
+    10136      1648     0       0       0       0      
+    TX: bytes  packets  errors  dropped carrier collsns 
+    136        17       2       2       0       0    
+
+*with the TEA2+ TGW connected and "CAN termination activated" send vehicle mode running
+*if the TGW has gone into sleep mode it will take a few seconds for it to respond, otherwise 
+*it will answer with a bunch of frames.
+
+pi@raspberrypi:~ $ cansend can0 10FF1FDF#FFF37F6FFF0CFFFF

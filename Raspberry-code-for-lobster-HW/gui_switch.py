@@ -1,4 +1,4 @@
-
+import os
 import sys
 if(sys.version_info[0]<3):
     from Tkinter import *
@@ -141,6 +141,18 @@ class App(Frame):
 	command=lambda: self.my_func(CAN_transmit))
 	button7.pack()  
 	
+	button8 = Button(root, text='Send vehicle mode running', width=25,
+	command=lambda: os.system("cansend can0 10FF1FDF#FFF37F6FFF0CFFFF"))
+	button8.pack()
+	
+	button9 = Button(root, text='shut down CAN controller', width=25,
+	command=lambda: os.system("sudo ifconfig can0 down"))
+	button9.pack()
+	
+	button10 = Button(root, text='start CAN controller 500k baud', width=25,
+	command=lambda: os.system("sudo ifconfig can0 up"))
+	button10.pack()
+	
 	
 
 	#Updates label with the reading of an GPIO input		
@@ -171,6 +183,6 @@ class App(Frame):
 root = Tk()
 root.wm_title('LOBSTER HW test interface')
 app = App(root)
-root.geometry("400x600+0+0")
+root.geometry("400x700+0+0")
 root.mainloop()
 GPIO.cleanup()
